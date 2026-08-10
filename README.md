@@ -51,6 +51,7 @@ Khi triển khai thật, nên đặt `CORS_ORIGIN` thành domain frontend cụ t
 | GET | `/health` | Trạng thái tiến trình |
 | GET | `/ready` | Kiểm tra kết nối PostgreSQL |
 | GET | `/api/v1/stats` | Thống kê số bản ghi |
+| GET | `/api/v1/data/kol.csv` | Tải bộ dữ liệu KOL và kênh social dạng CSV UTF-8 |
 | GET | `/api/v1/influencers` | Danh sách KOL, tìm kiếm/lọc/sắp xếp/phân trang |
 | GET | `/api/v1/influencers/:key` | Chi tiết KOL cùng kênh, MCN, BSI và growth |
 | GET | `/api/v1/influencers/source/:sourceId` | Tra KOL theo ID gốc của nguồn |
