@@ -33,6 +33,12 @@ export const config = {
     max: readInteger("PGPOOL_MAX", 10, 1, 100),
     idleTimeoutMillis: readInteger("PGIDLE_TIMEOUT_MS", 30_000, 1_000, 600_000),
     connectionTimeoutMillis: readInteger("PGCONNECTION_TIMEOUT_MS", 5_000, 500, 60_000)
+  },
+  auth: {
+    jwtSecret: process.env.JWT_SECRET || (process.env.NODE_ENV === "production" ? "" : "local-development-jwt-secret-change-before-deploy"),
+    bootstrapEmail: process.env.ADMIN_BOOTSTRAP_EMAIL || "",
+    bootstrapPassword: process.env.ADMIN_BOOTSTRAP_PASSWORD || "",
+    bootstrapName: process.env.ADMIN_BOOTSTRAP_NAME || "Quản trị hệ thống"
   }
 } as const;
 

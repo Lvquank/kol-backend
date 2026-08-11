@@ -30,15 +30,21 @@ function isValidChannelUrl(value: unknown): boolean {
   } catch { return false; }
 }
 
+function isVietnamesePhone(value: unknown): boolean { return /^0\d{9}$/.test(text(value)); }
+function isValidEmail(value: unknown): boolean { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(text(value)); }
+
 function validate(body: RegistrationBody): string | null {
   const profile = body?.profile;
   if (!body || !["individual", "organization"].includes(body.applicantType)) return "Loại hồ sơ không hợp lệ.";
   if (!profile || !text(profile.name) || !text(profile.nationality) || !text(profile.address) || !text(profile.email) || !text(profile.zalo)) return "Vui lòng điền đầy đủ thông tin bắt buộc.";
-  if (!/^\S+@\S+\.\S+$/.test(profile.email)) return "Email không hợp lệ.";
+  if (!isValidEmail(profile.email)) return "Email không đúng định dạng.";
+  if (text(profile.phone) && !isVietnamesePhone(profile.phone)) return "Số điện thoại phải có 10 số và bắt đầu bằng 0.";
+  if (!isVietnamesePhone(profile.zalo)) return "Số Zalo phải có 10 số và bắt đầu bằng 0.";
   if (body.applicantType === "individual" && (!Array.isArray(profile.activityCategories) || profile.activityCategories.length === 0)) return "Vui lòng chọn ít nhất một danh mục hoạt động.";
   if (body.applicantType === "individual" && (!Array.isArray(body.channels) || body.channels.length === 0 || body.channels.some((channel) => !text(channel.platform) || !text(channel.name) || !isValidChannelUrl(channel.url)))) return "Vui lòng khai báo ít nhất một kênh có URL kênh hợp lệ.";
   if (!body.declaration?.accuracyConfirmed || !body.declaration?.termsConfirmed) return "Bạn cần xác nhận cam kết trước khi nộp hồ sơ.";
-  if (body.applicantType === "organization" && (!text(profile.businessLicenseNo) || !text(profile.licenseIssuedAt) || !text(profile.licenseIssuedBy) || !text(profile.legalRepresentative) || !text(profile.channelManager) || !text(profile.channelManagerPhone) || !Number.isInteger(Number(text(profile.channelQuantity))) || Number(text(profile.channelQuantity)) < 1 || !text(profile.channelDetailFileName) || !text(profile.whiteListRequestFileName))) return "Vui lòng điền đầy đủ thông tin pháp lý, thông tin quản lý kênh và các tài liệu đính kèm.";
+  if (text(profile.channelManagerPhone) && !isVietnamesePhone(profile.channelManagerPhone)) return "Số điện thoại nhân sự phải có 10 số và bắt đầu bằng 0.";
+  if (body.applicantType === "organization" && (!text(profile.businessLicenseNo) || !text(profile.licenseIssuedAt) || !text(profile.licenseIssuedBy) || !text(profile.legalRepresentative) || !text(profile.channelManager) || !isVietnamesePhone(profile.channelManagerPhone) || !Number.isInteger(Number(text(profile.channelQuantity))) || Number(text(profile.channelQuantity)) < 1 || !text(profile.channelDetailFileName) || !text(profile.whiteListRequestFileName))) return "Vui lòng điền đầy đủ thông tin pháp lý, thông tin quản lý kênh và các tài liệu đính kèm.";
   return null;
 }
 
