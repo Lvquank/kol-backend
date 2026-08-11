@@ -318,7 +318,7 @@ GET /api/v1/influencers/source/1349
 | Path Params | `key`: `influencer_key`, bắt buộc |
 | Query Params | Không có |
 | Status | `200`, `404`, `500` |
-| Note | Trả kèm source ID, kênh, MCN, growth ranking và BSI ranking |
+| Note | Trả kèm source ID, kênh, bài đăng gần nhất, MCN, growth ranking và BSI ranking |
 
 **Example**
 
@@ -339,6 +339,7 @@ GET /api/v1/influencers/kol_28b6e9b15f3a96dc9b938fd08c9e18c0
   "scraped_at": "2026-08-08T10:00:00.000Z",
   "source_ids": [],
   "channels": [],
+  "recent_posts": [],
   "mcns": [],
   "growth_rankings": [],
   "bsi_rankings": []
@@ -551,7 +552,7 @@ GET /api/v1/mcns?platform=youtube&sort=channels&order=desc
 | Path Params | `sourceId`: `mcn_owners.source_id`, bắt buộc |
 | Query Params | Không có |
 | Status | `200`, `404`, `500` |
-| Note | Trả kèm KOL thành viên và lịch sử growth ranking |
+| Note | Trả kèm KOL thành viên, Top KOL theo tuần, Top kênh theo tuần, tổng chỉ số và lịch sử growth ranking |
 
 **Example**
 
@@ -571,18 +572,33 @@ GET /api/v1/mcns/22
   "channels_by_type": { "youtube": 120, "tiktok": 50 },
   "total_channels": 170,
   "total_kols": 60,
+  "total_interactions": 150000000,
+  "total_views": 9700000000,
+  "total_likes": 146700000,
   "raw_json": {},
   "scraped_at": "2026-08-08T10:00:00.000Z",
   "featured_influencers": [
     {
-      "membershipKey": "mci_...",
-      "relationshipType": "featured",
-      "sourceUrl": "https://kol.gov.vn/...",
-      "influencerSourceId": "1349",
-      "influencerKey": "kol_...",
-      "name": "Ví dụ KOL",
-      "nickName": null,
-      "identityVerified": true
+      "rank": 1,
+      "source_id": "2010",
+      "name": "Chang Dory",
+      "subtitle": null,
+      "profile_url": "/nguoi-noi-tieng/2010",
+      "avatar_url": "/assets/detail/mcn22/kol-2010-chang-dory.jpg",
+      "interaction_value": 14900000,
+      "growth_rate": 3.2
+    }
+  ],
+  "member_influencers": [],
+  "featured_channels": [
+    {
+      "rank": 1,
+      "name": "Kênh nổi bật",
+      "platform": "tiktok",
+      "channel_url": "https://www.tiktok.com/@example",
+      "avatar_url": "/assets/detail/example.jpg",
+      "interaction_value": 1200000,
+      "growth_rate": 18.4
     }
   ],
   "growth_rankings": []
