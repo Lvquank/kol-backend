@@ -113,7 +113,17 @@ export const mcnRoutes: FastifyPluginAsync = async (app) => {
           ) ORDER BY i.name)
             FROM ${schema}.mcn_influencers mi
             JOIN ${schema}.influencers i ON i.influencer_key = mi.influencer_key
-            WHERE mi.mcn_source_id = m.source_id), '[]'::jsonb) AS featured_influencers,
+            WHERE mi.mcn_source_id = m.source_id), '[]'::jsonb) AS member_influencers,
+          COALESCE((SELECT jsonb_agg(
+            to_jsonb(fi) - 'featured_influencer_key' - 'mcn_source_id' - 'influencer_key'
+            ORDER BY fi.rank)
+            FROM ${schema}.mcn_featured_influencers fi
+            WHERE fi.mcn_source_id = m.source_id), '[]'::jsonb) AS featured_influencers,
+          COALESCE((SELECT jsonb_agg(
+            to_jsonb(fc) - 'featured_channel_key' - 'mcn_source_id'
+            ORDER BY fc.rank)
+            FROM ${schema}.mcn_featured_channels fc
+            WHERE fc.mcn_source_id = m.source_id), '[]'::jsonb) AS featured_channels,
           COALESCE((SELECT jsonb_agg(jsonb_build_object(
             'snapshotKey', gr.snapshot_key,
             'periodDays', gr.period_days,
@@ -124,6 +134,11 @@ export const mcnRoutes: FastifyPluginAsync = async (app) => {
             'growthChange', gr.growth_change,
             'growthRate', gr.growth_rate,
             'score', gr.score,
+            'avatarUrl', gr.avatar_url,
+            'interactionGrowth', gr.raw_json->>'interaction_growth',
+            'followersGrowth', gr.raw_json->>'followers_growth',
+            'viewsGrowth', gr.raw_json->>'views_growth',
+            'likesGrowth', gr.raw_json->>'likes_growth',
             'scrapedAt', gr.scraped_at
           ) ORDER BY gr.scraped_at DESC, gr.period_days, gr.rank)
             FROM ${schema}.growth_entities ge
