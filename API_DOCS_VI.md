@@ -1187,6 +1187,7 @@ console.log(data.data, data.pagination);
 | Database readiness | `GET` | `/ready` | `200`, `500` |
 | API index | `GET` | `/api/v1/` | `200` |
 | Dataset stats | `GET` | `/api/v1/stats` | `200`, `500` |
+| Tải CSV KOL | `GET` | `/api/v1/data/kol.csv` | `200`, `500` |
 | Danh sách KOL | `GET` | `/api/v1/influencers` | `200`, `400`, `500` |
 | KOL theo source ID | `GET` | `/api/v1/influencers/source/:sourceId` | `200`, `404`, `500` |
 | Chi tiết KOL | `GET` | `/api/v1/influencers/:key` | `200`, `404`, `500` |

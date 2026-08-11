@@ -29,21 +29,31 @@ const sortColumns = {
 } as const;
 
 export const newsRoutes: FastifyPluginAsync = async (app) => {
+  const fetchCategories = async () => {
+    const result = await query<DbRow>(`
+      SELECT c.category_key, c.name, count(link.slug)::int AS post_count
+      FROM ${schema}.news_categories c
+      LEFT JOIN ${schema}.news_post_categories link ON link.category_key = c.category_key
+      GROUP BY c.category_key, c.name
+      ORDER BY lower(c.name)
+    `);
+    return { data: result.rows };
+  };
+
   app.get(
     "/news/categories",
     {
       schema: { tags: ["News"], summary: "List news categories" }
     },
-    async () => {
-      const result = await query<DbRow>(`
-        SELECT c.category_key, c.name, count(link.slug)::int AS post_count
-        FROM ${schema}.news_categories c
-        LEFT JOIN ${schema}.news_post_categories link ON link.category_key = c.category_key
-        GROUP BY c.category_key, c.name
-        ORDER BY lower(c.name)
-      `);
-      return { data: result.rows };
-    }
+    fetchCategories
+  );
+
+  app.get(
+    "/categories",
+    {
+      schema: { tags: ["News"], summary: "List categories (alias for /news/categories)" }
+    },
+    fetchCategories
   );
 
   app.get(

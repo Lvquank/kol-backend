@@ -7,12 +7,14 @@ import { config } from "./config.js";
 import { closeDatabase } from "./db.js";
 import { bsiRoutes } from "./routes/bsi.js";
 import { channelRoutes } from "./routes/channels.js";
+import { dataRoutes } from "./routes/data.js";
 import { growthRoutes } from "./routes/growth.js";
 import { healthRoutes } from "./routes/health.js";
 import { influencerRoutes } from "./routes/influencers.js";
 import { mcnRoutes } from "./routes/mcns.js";
 import { metaRoutes } from "./routes/meta.js";
 import { newsRoutes } from "./routes/news.js";
+import { registrationRoutes } from "./routes/registrations.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -32,7 +34,7 @@ export async function buildApp() {
   });
   await app.register(cors, {
     origin: corsOrigin,
-    methods: ["GET", "HEAD", "OPTIONS"]
+    methods: ["GET", "HEAD", "OPTIONS", "POST"]
   });
   await app.register(swagger, {
     openapi: {
@@ -46,10 +48,12 @@ export async function buildApp() {
         { name: "System" },
         { name: "Influencers" },
         { name: "Channels" },
+        { name: "Data" },
         { name: "MCNs" },
         { name: "Growth rankings" },
         { name: "BSI rankings" },
         { name: "News" }
+        , { name: "Registrations" }
       ]
     }
   });
@@ -66,10 +70,12 @@ export async function buildApp() {
   await app.register(metaRoutes, { prefix: "/api/v1" });
   await app.register(influencerRoutes, { prefix: "/api/v1" });
   await app.register(channelRoutes, { prefix: "/api/v1" });
+  await app.register(dataRoutes, { prefix: "/api/v1" });
   await app.register(mcnRoutes, { prefix: "/api/v1" });
   await app.register(growthRoutes, { prefix: "/api/v1" });
   await app.register(bsiRoutes, { prefix: "/api/v1" });
   await app.register(newsRoutes, { prefix: "/api/v1" });
+  await app.register(registrationRoutes, { prefix: "/api/v1" });
 
   app.setNotFoundHandler((request, reply) => {
     return reply.code(404).send({

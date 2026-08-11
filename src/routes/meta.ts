@@ -21,6 +21,7 @@ export const metaRoutes: FastifyPluginAsync = async (app) => {
         stats: "/api/v1/stats",
         influencers: "/api/v1/influencers",
         channels: "/api/v1/channels",
+        kolCsv: "/api/v1/data/kol.csv",
         mcns: "/api/v1/mcns",
         growth: "/api/v1/growth/rankings",
         bsi: "/api/v1/bsi/rankings",

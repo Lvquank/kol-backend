@@ -119,7 +119,24 @@ export const growthRoutes: FastifyPluginAsync = async (app) => {
               'key', i.influencer_key,
               'name', i.name,
               'nickName', i.nick_name,
-              'identityVerified', i.identity_verified
+              'identityVerified', i.identity_verified,
+              'platforms', COALESCE((
+                SELECT jsonb_agg(channel_platform ORDER BY channel_platform)
+                FROM (
+                  SELECT DISTINCT lower(c.channel_type) AS channel_platform
+                  FROM ${schema}.social_channels c
+                  WHERE c.influencer_key = i.influencer_key
+                ) influencer_platforms
+              ), '[]'::jsonb),
+              'channelsByType', COALESCE((
+                SELECT jsonb_object_agg(channel_platform, channel_count)
+                FROM (
+                  SELECT lower(c.channel_type) AS channel_platform, count(*)::int AS channel_count
+                  FROM ${schema}.social_channels c
+                  WHERE c.influencer_key = i.influencer_key
+                  GROUP BY lower(c.channel_type)
+                ) influencer_channel_counts
+              ), '{}'::jsonb)
             )
             WHEN ge.mcn_source_id IS NOT NULL THEN jsonb_build_object(
               'type', 'owner',
@@ -127,7 +144,9 @@ export const growthRoutes: FastifyPluginAsync = async (app) => {
               'name', m.name,
               'subtitle', m.subtitle,
               'totalChannels', m.total_channels,
-              'totalKols', m.total_kols
+              'totalKols', m.total_kols,
+              'platforms', m.platforms,
+              'channelsByType', m.channels_by_type
             )
           END AS entity,
           count(*) OVER()::text AS total_count

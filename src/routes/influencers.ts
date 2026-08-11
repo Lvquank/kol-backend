@@ -93,6 +93,8 @@ export const influencerRoutes: FastifyPluginAsync = async (app) => {
         WITH filtered AS (
           SELECT
             i.*,
+            (SELECT bs.image_url FROM ${schema}.bsi_subjects bs
+              WHERE bs.influencer_key = i.influencer_key AND bs.image_url IS NOT NULL AND bs.image_url != '' LIMIT 1) AS avatar_url,
             (SELECT count(*)::int FROM ${schema}.social_channels c
               WHERE c.influencer_key = i.influencer_key) AS channel_count,
             COALESCE((SELECT sum(c.followers) FROM ${schema}.social_channels c
@@ -139,7 +141,10 @@ export const influencerRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const result = await query<DbRow>(`
-        SELECT s.*, to_jsonb(i) AS influencer
+        SELECT s.*, to_jsonb(i) || jsonb_build_object(
+          'avatar_url', (SELECT bs.image_url FROM ${schema}.bsi_subjects bs
+            WHERE bs.influencer_key = i.influencer_key AND bs.image_url IS NOT NULL AND bs.image_url != '' LIMIT 1)
+        ) AS influencer
         FROM ${schema}.influencer_source_ids s
         JOIN ${schema}.influencers i ON i.influencer_key = s.influencer_key
         WHERE s.source_id = $1
@@ -165,6 +170,8 @@ export const influencerRoutes: FastifyPluginAsync = async (app) => {
       const result = await query<DbRow>(`
         SELECT
           i.*,
+          (SELECT bs.image_url FROM ${schema}.bsi_subjects bs
+            WHERE bs.influencer_key = i.influencer_key AND bs.image_url IS NOT NULL AND bs.image_url != '' LIMIT 1) AS avatar_url,
           COALESCE((SELECT jsonb_agg(to_jsonb(s) - 'scraped_at' ORDER BY s.source_id)
             FROM ${schema}.influencer_source_ids s
             WHERE s.influencer_key = i.influencer_key), '[]'::jsonb) AS source_ids,
