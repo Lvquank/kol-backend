@@ -14,7 +14,18 @@ INSERT INTO kol_gov.activity_categories (category_key, name, sort_order) VALUES
   ('gaming', 'Game & Thể thao điện tử', 4),
   ('education', 'Giáo dục', 5),
   ('entertainment', 'Giải trí', 6),
-  ('business_marketing', 'Kinh doanh, Truyền thông & Marketing', 7)
+  ('business_marketing', 'Kinh doanh, Truyền thông & Marketing', 7),
+  ('economy_finance_investment', 'Kinh tế, Tài chính & Đầu tư', 8),
+  ('beauty_fashion', 'Làm đẹp & Thời trang', 9),
+  ('film_animation', 'Phim & Hoạt hình', 10),
+  ('feng_shui', 'Phong thủy', 11),
+  ('health', 'Sức khỏe', 12),
+  ('sports', 'Thể thao', 13),
+  ('news_current_affairs', 'Tin tức & Thời sự', 14),
+  ('automotive', 'Xe', 15),
+  ('music', 'Âm nhạc', 16),
+  ('lifestyle_family', 'Đời sống & Gia đình', 17),
+  ('food_beverage', 'Ẩm thực & Đồ uống', 18)
 ON CONFLICT (category_key) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS kol_gov.registration_applications (
