@@ -23,6 +23,10 @@ export const config = {
   host: process.env.HOST || "0.0.0.0",
   port: readInteger("PORT", 4000, 1, 65535),
   corsOrigin: process.env.CORS_ORIGIN || "*",
+  cloudinary: {
+    url: process.env.CLOUDINARY_URL?.trim() || "",
+    folder: process.env.CLOUDINARY_FOLDER?.trim() || "kol-gov/registration-avatars"
+  },
   postgres: {
     host: process.env.PGHOST || "localhost",
     port: readInteger("PGPORT", 5432, 1, 65535),
