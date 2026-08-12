@@ -47,7 +47,7 @@ export async function buildApp() {
   });
   await app.register(cors, {
     origin: corsOrigin,
-    methods: ["GET", "HEAD", "OPTIONS", "POST", "PATCH"],
+    methods: ["GET", "HEAD", "OPTIONS", "POST", "PATCH", "PUT", "DELETE"],
   });
   await app.register(jwt, {
     secret: config.auth.jwtSecret || "auth-not-configured",

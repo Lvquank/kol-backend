@@ -13,6 +13,7 @@ type McnListQuery = {
   page?: string;
   limit?: string;
   search?: string;
+  verified?: "true" | "false" | "all";
   platform?: string;
   sort?: "name" | "channels" | "kols" | "scrapedAt";
   order?: "asc" | "desc";
@@ -40,6 +41,7 @@ export const mcnRoutes: FastifyPluginAsync = async (app) => {
             page: { type: "integer", minimum: 1, default: 1 },
             limit: { type: "integer", minimum: 1, maximum: 100, default: 20 },
             search: { type: "string" },
+            verified: { type: "string", enum: ["true", "false", "all"] },
             platform: { type: "string" },
             sort: { type: "string", enum: Object.keys(sortColumns), default: "name" },
             order: { type: "string", enum: ["asc", "desc"], default: "asc" }
@@ -56,6 +58,14 @@ export const mcnRoutes: FastifyPluginAsync = async (app) => {
         values.push(pattern);
         conditions.push(`(m.name ILIKE $${values.length} ESCAPE '\\'
           OR m.subtitle ILIKE $${values.length} ESCAPE '\\')`);
+      }
+      if (request.query.verified === "all") {
+        // Admin view: include all records
+      } else if (request.query.verified === "true") {
+        conditions.push(`m.identity_verified = true`);
+      } else {
+        // Public default: only show active/unverified (Đang hiển thị)
+        conditions.push(`COALESCE(m.identity_verified, false) = false`);
       }
       if (request.query.platform) {
         values.push(request.query.platform.toLowerCase());
