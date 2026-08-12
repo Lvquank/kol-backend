@@ -31,6 +31,7 @@ export async function buildApp() {
     },
     trustProxy: true,
     requestIdHeader: "x-request-id",
+    maxParamLength: 1000,
   });
 
   const corsOrigin =
