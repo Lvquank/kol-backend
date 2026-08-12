@@ -130,6 +130,7 @@ export const bsiRoutes: FastifyPluginAsync = async (app) => {
         JOIN ${schema}.bsi_subjects bs ON bs.subject_key = link.subject_key
         LEFT JOIN ${schema}.influencers i ON i.influencer_key = bs.influencer_key
         WHERE ${conditions.join(" AND ")}
+          AND (bs.influencer_key IS NULL OR COALESCE(i.identity_verified, false) = false)
         ORDER BY br.rank ASC, br.snapshot_key ASC
         LIMIT $${values.length - 1} OFFSET $${values.length}
       `, values);

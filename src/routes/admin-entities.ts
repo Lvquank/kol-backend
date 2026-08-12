@@ -22,6 +22,7 @@ type McnBody = {
   platforms?: string[];
   totalChannels?: number;
   totalKols?: number;
+  identityVerified?: boolean;
 };
 
 const text = (value: unknown) => typeof value === "string" ? value.trim() : "";
@@ -48,7 +49,7 @@ function validateInfluencer(body: InfluencerBody) {
   if (gender.length > 50) return { error: "Giới tính tối đa 50 ký tự." };
   if (!sourceUrl || !validHttpUrl(sourceUrl)) return { error: "Đường dẫn nguồn không hợp lệ." };
   if (avatarProvided && !isManagedCloudinaryUrl(avatarUrl)) return { error: "Ảnh đại diện phải được tải lên qua hệ thống." };
-  if (typeof body.identityVerified !== "boolean") return { error: "Trạng thái xác minh không hợp lệ." };
+  if (body.identityVerified !== undefined && typeof body.identityVerified !== "boolean") return { error: "Trạng thái xác minh không hợp lệ." };
   return { name, nickName: nickName || null, gender: gender || null, avatarProvided, avatarUrl: avatarUrl || null, sourceUrl, identityVerified: body.identityVerified };
 }
 
@@ -68,7 +69,8 @@ function validateMcn(body: McnBody) {
   if (platforms.length > 20 || platforms.some((item) => item.length > 50)) return { error: "Danh sách nền tảng không hợp lệ." };
   if (!Number.isInteger(totalChannels) || totalChannels < 0 || totalChannels > 1_000_000) return { error: "Tổng số kênh không hợp lệ." };
   if (!Number.isInteger(totalKols) || totalKols < 0 || totalKols > 1_000_000) return { error: "Tổng số KOL không hợp lệ." };
-  return { name, subtitle: subtitle || null, avatarProvided, avatarUrl: avatarUrl || null, platforms, totalChannels, totalKols };
+  if (body.identityVerified !== undefined && typeof body.identityVerified !== "boolean") return { error: "Trạng thái xác minh không hợp lệ." };
+  return { name, subtitle: subtitle || null, avatarProvided, avatarUrl: avatarUrl || null, platforms, totalChannels, totalKols, identityVerified: body.identityVerified };
 }
 
 export const adminEntityRoutes: FastifyPluginAsync = async (app) => {
@@ -111,17 +113,52 @@ export const adminEntityRoutes: FastifyPluginAsync = async (app) => {
       const admin = await requireAdmin(request);
       const validated = validateInfluencer(request.body ?? {});
       if ("error" in validated) return reply.code(400).send({ error: "VALIDATION_ERROR", message: validated.error });
-      const result = await query<{ influencer_key: string }>(
+      const result = await query<{ influencer_key: string; identity_verified: boolean }>(
         `UPDATE ${schema}.influencers
-            SET name = $2, nick_name = $3, gender = $4, identity_verified = $5,
+            SET name = $2, nick_name = $3, gender = $4,
+                identity_verified = CASE WHEN $5::boolean IS NOT NULL THEN $5 ELSE identity_verified END,
                 avatar_url = CASE WHEN $6::boolean THEN $7 ELSE avatar_url END,
                 source_url = $8, updated_at = now(), updated_by = $9
           WHERE influencer_key = $1
-          RETURNING influencer_key`,
-        [request.params.key, validated.name, validated.nickName, validated.gender, validated.identityVerified, validated.avatarProvided, validated.avatarUrl, validated.sourceUrl, admin.sub]
+          RETURNING influencer_key, identity_verified`,
+        [request.params.key, validated.name, validated.nickName, validated.gender, validated.identityVerified ?? null, validated.avatarProvided, validated.avatarUrl, validated.sourceUrl, admin.sub]
       );
       if (!result.rows[0]) return reply.code(404).send({ error: "NOT_FOUND", message: "Không tìm thấy KOL." });
-      return { data: { influencerKey: result.rows[0].influencer_key, updatedAt: new Date().toISOString() } };
+      return { data: { influencerKey: result.rows[0].influencer_key, identityVerified: result.rows[0].identity_verified, updatedAt: new Date().toISOString() } };
+    }
+  );
+
+  app.post<{ Params: InfluencerParams }>(
+    "/admin/influencers/:key/toggle-visibility",
+    { schema: { tags: ["Administration"], summary: "Toggle influencer visibility (hide/show on frontend)" } },
+    async (request, reply) => {
+      const admin = await requireAdmin(request);
+      const result = await query<{ influencer_key: string; identity_verified: boolean }>(
+        `UPDATE ${schema}.influencers
+            SET identity_verified = NOT COALESCE(identity_verified, false),
+                updated_at = now(), updated_by = $2
+          WHERE influencer_key = $1
+          RETURNING influencer_key, identity_verified`,
+        [request.params.key, admin.sub]
+      );
+      if (!result.rows[0]) return reply.code(404).send({ error: "NOT_FOUND", message: "Không tìm thấy KOL." });
+      return { data: { influencerKey: result.rows[0].influencer_key, identityVerified: result.rows[0].identity_verified, updatedAt: new Date().toISOString() } };
+    }
+  );
+
+  app.delete<{ Params: InfluencerParams }>(
+    "/admin/influencers/:key",
+    { schema: { tags: ["Administration"], summary: "Delete an influencer and its dependent data" } },
+    async (request, reply) => {
+      await requireAdmin(request, ["super_admin"]);
+      const result = await query<{ influencer_key: string }>(
+        `DELETE FROM ${schema}.influencers
+          WHERE influencer_key = $1
+          RETURNING influencer_key`,
+        [request.params.key]
+      );
+      if (!result.rows[0]) return reply.code(404).send({ error: "NOT_FOUND", message: "Không tìm thấy KOL." });
+      return reply.code(204).send();
     }
   );
 
@@ -132,18 +169,53 @@ export const adminEntityRoutes: FastifyPluginAsync = async (app) => {
       const admin = await requireAdmin(request);
       const validated = validateMcn(request.body ?? {});
       if ("error" in validated) return reply.code(400).send({ error: "VALIDATION_ERROR", message: validated.error });
-      const result = await query<{ source_id: string }>(
+      const result = await query<{ source_id: string; identity_verified: boolean }>(
         `UPDATE ${schema}.mcn_owners
             SET name = $2, subtitle = $3,
                 avatar_url = CASE WHEN $4::boolean THEN $5 ELSE avatar_url END,
                 platforms = $6::jsonb, total_channels = $7, total_kols = $8,
+                identity_verified = CASE WHEN $10::boolean IS NOT NULL THEN $10 ELSE COALESCE(identity_verified, false) END,
                 updated_at = now(), updated_by = $9
           WHERE source_id = $1
-          RETURNING source_id`,
-        [request.params.sourceId, validated.name, validated.subtitle, validated.avatarProvided, validated.avatarUrl, JSON.stringify(validated.platforms), validated.totalChannels, validated.totalKols, admin.sub]
+          RETURNING source_id, identity_verified`,
+        [request.params.sourceId, validated.name, validated.subtitle, validated.avatarProvided, validated.avatarUrl, JSON.stringify(validated.platforms), validated.totalChannels, validated.totalKols, admin.sub, validated.identityVerified ?? null]
       );
       if (!result.rows[0]) return reply.code(404).send({ error: "NOT_FOUND", message: "Không tìm thấy MCN." });
-      return { data: { sourceId: result.rows[0].source_id, updatedAt: new Date().toISOString() } };
+      return { data: { sourceId: result.rows[0].source_id, identityVerified: result.rows[0].identity_verified, updatedAt: new Date().toISOString() } };
+    }
+  );
+
+  app.post<{ Params: McnParams }>(
+    "/admin/mcns/:sourceId/toggle-visibility",
+    { schema: { tags: ["Administration"], summary: "Toggle MCN visibility (hide/show on frontend)" } },
+    async (request, reply) => {
+      const admin = await requireAdmin(request);
+      const result = await query<{ source_id: string; identity_verified: boolean }>(
+        `UPDATE ${schema}.mcn_owners
+            SET identity_verified = NOT COALESCE(identity_verified, false),
+                updated_at = now(), updated_by = $2
+          WHERE source_id = $1
+          RETURNING source_id, identity_verified`,
+        [request.params.sourceId, admin.sub]
+      );
+      if (!result.rows[0]) return reply.code(404).send({ error: "NOT_FOUND", message: "Không tìm thấy MCN." });
+      return { data: { sourceId: result.rows[0].source_id, identityVerified: result.rows[0].identity_verified, updatedAt: new Date().toISOString() } };
+    }
+  );
+
+  app.delete<{ Params: McnParams }>(
+    "/admin/mcns/:sourceId",
+    { schema: { tags: ["Administration"], summary: "Delete an MCN and its dependent data" } },
+    async (request, reply) => {
+      await requireAdmin(request, ["super_admin"]);
+      const result = await query<{ source_id: string }>(
+        `DELETE FROM ${schema}.mcn_owners
+          WHERE source_id = $1
+          RETURNING source_id`,
+        [request.params.sourceId]
+      );
+      if (!result.rows[0]) return reply.code(404).send({ error: "NOT_FOUND", message: "Không tìm thấy MCN." });
+      return reply.code(204).send();
     }
   );
 };
