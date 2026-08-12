@@ -119,11 +119,15 @@ export const mcnRoutes: FastifyPluginAsync = async (app) => {
             ORDER BY fi.rank)
             FROM ${schema}.mcn_featured_influencers fi
             WHERE fi.mcn_source_id = m.source_id), '[]'::jsonb) AS featured_influencers,
-          COALESCE((SELECT jsonb_agg(
-            to_jsonb(fc) - 'featured_channel_key' - 'mcn_source_id'
-            ORDER BY fc.rank)
-            FROM ${schema}.mcn_featured_channels fc
-            WHERE fc.mcn_source_id = m.source_id), '[]'::jsonb) AS featured_channels,
+          CASE
+            WHEN to_regclass('${schema}.mcn_featured_channels') IS NOT NULL THEN
+              COALESCE((SELECT jsonb_agg(
+                to_jsonb(fc) - 'featured_channel_key' - 'mcn_source_id'
+                ORDER BY fc.rank)
+                FROM ${schema}.mcn_featured_channels fc
+                WHERE fc.mcn_source_id = m.source_id), '[]'::jsonb)
+            ELSE '[]'::jsonb
+          END AS featured_channels,
           COALESCE((SELECT jsonb_agg(jsonb_build_object(
             'snapshotKey', gr.snapshot_key,
             'periodDays', gr.period_days,
