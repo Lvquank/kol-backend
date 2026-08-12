@@ -1,5 +1,7 @@
 import cors from "@fastify/cors";
+import jwt from "@fastify/jwt";
 import helmet from "@fastify/helmet";
+import multipart from "@fastify/multipart";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import Fastify, { type FastifyError } from "fastify";
@@ -15,35 +17,57 @@ import { mcnRoutes } from "./routes/mcns.js";
 import { metaRoutes } from "./routes/meta.js";
 import { newsRoutes } from "./routes/news.js";
 import { registrationRoutes } from "./routes/registrations.js";
+import { authRoutes } from "./routes/auth.js";
+import { adminApplicationRoutes } from "./routes/admin-applications.js";
+import { reportRoutes } from "./routes/reports.js";
+import { adminContentRoutes } from "./routes/admin-content.js";
+import { adminEntityRoutes } from "./routes/admin-entities.js";
+import { informationProposalRoutes } from "./routes/information-proposals.js";
 
 export async function buildApp() {
   const app = Fastify({
     logger: {
-      level: config.nodeEnv === "production" ? "info" : "debug"
+      level: config.nodeEnv === "production" ? "info" : "debug",
     },
     trustProxy: true,
-    requestIdHeader: "x-request-id"
+    requestIdHeader: "x-request-id",
   });
 
-  const corsOrigin = config.corsOrigin === "*"
-    ? "*"
-    : config.corsOrigin.split(",").map((origin) => origin.trim()).filter(Boolean);
+  const corsOrigin =
+    config.corsOrigin === "*"
+      ? "*"
+      : config.corsOrigin
+          .split(",")
+          .map((origin) => origin.trim())
+          .filter(Boolean);
 
   await app.register(helmet, {
-    contentSecurityPolicy: config.nodeEnv === "production" ? undefined : false
+    contentSecurityPolicy: config.nodeEnv === "production" ? undefined : false,
   });
   await app.register(cors, {
     origin: corsOrigin,
-    methods: ["GET", "HEAD", "OPTIONS", "POST"]
+    methods: ["GET", "HEAD", "OPTIONS", "POST", "PATCH"],
+  });
+  await app.register(jwt, {
+    secret: config.auth.jwtSecret || "auth-not-configured",
+  });
+  await app.register(multipart, {
+    limits: {
+      files: 1,
+      fileSize: 20 * 1024 * 1024,
+      parts: 1
+    }
   });
   await app.register(swagger, {
     openapi: {
       info: {
         title: "KOL.GOV.VN PostgreSQL API",
         description: "Read-only REST API for the normalized kol.gov.vn dataset",
-        version: "1.0.0"
+        version: "1.0.0",
       },
-      servers: [{ url: `http://localhost:${config.port}`, description: "Local server" }],
+      servers: [
+        { url: `http://localhost:${config.port}`, description: "Local server" },
+      ],
       tags: [
         { name: "System" },
         { name: "Influencers" },
@@ -52,18 +76,21 @@ export async function buildApp() {
         { name: "MCNs" },
         { name: "Growth rankings" },
         { name: "BSI rankings" },
-        { name: "News" }
-        , { name: "Registrations" }
-      ]
-    }
+        { name: "News" },
+        { name: "Registrations" },
+        { name: "Administration" },
+        { name: "Reports" },
+        { name: "Information proposals" },
+      ],
+    },
   });
   await app.register(swaggerUi, {
     routePrefix: "/docs",
     staticCSP: true,
     uiConfig: {
       docExpansion: "list",
-      deepLinking: true
-    }
+      deepLinking: true,
+    },
   });
 
   await app.register(healthRoutes);
@@ -75,12 +102,18 @@ export async function buildApp() {
   await app.register(growthRoutes, { prefix: "/api/v1" });
   await app.register(bsiRoutes, { prefix: "/api/v1" });
   await app.register(newsRoutes, { prefix: "/api/v1" });
+  await app.register(authRoutes, { prefix: "/api/v1" });
+  await app.register(adminApplicationRoutes, { prefix: "/api/v1" });
+  await app.register(reportRoutes, { prefix: "/api/v1" });
+  await app.register(adminContentRoutes, { prefix: "/api/v1" });
+  await app.register(adminEntityRoutes, { prefix: "/api/v1" });
+  await app.register(informationProposalRoutes, { prefix: "/api/v1" });
   await app.register(registrationRoutes, { prefix: "/api/v1" });
 
   app.setNotFoundHandler((request, reply) => {
     return reply.code(404).send({
       error: "ROUTE_NOT_FOUND",
-      message: `Route ${request.method} ${request.url} not found`
+      message: `Route ${request.method} ${request.url} not found`,
     });
   });
 
@@ -90,13 +123,17 @@ export async function buildApp() {
       return reply.code(400).send({
         error: "VALIDATION_ERROR",
         message: error.message,
-        details: error.validation
+        details: error.validation,
       });
     }
-    const statusCode = error.statusCode && error.statusCode < 500 ? error.statusCode : 500;
+    const statusCode =
+      error.statusCode && error.statusCode < 500 ? error.statusCode : 500;
     return reply.code(statusCode).send({
       error: statusCode === 500 ? "INTERNAL_SERVER_ERROR" : "REQUEST_ERROR",
-      message: statusCode === 500 ? "An internal server error occurred" : error.message
+      message:
+        statusCode === 500
+          ? "An internal server error occurred"
+          : error.message,
     });
   });
 
