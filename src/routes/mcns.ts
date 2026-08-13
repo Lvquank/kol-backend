@@ -59,12 +59,9 @@ export const mcnRoutes: FastifyPluginAsync = async (app) => {
         conditions.push(`(m.name ILIKE $${values.length} ESCAPE '\\'
           OR m.subtitle ILIKE $${values.length} ESCAPE '\\')`);
       }
-      if (request.query.verified === "all") {
-        // Admin view: include all records
-      } else if (request.query.verified === "true") {
+      if (request.query.verified === "true") {
         conditions.push(`m.identity_verified = true`);
-      } else {
-        // Public default: only show active/unverified (Đang hiển thị)
+      } else if (request.query.verified === "false") {
         conditions.push(`COALESCE(m.identity_verified, false) = false`);
       }
       if (request.query.platform) {
