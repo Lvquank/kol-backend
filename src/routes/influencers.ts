@@ -64,10 +64,10 @@ export const influencerRoutes: FastifyPluginAsync = async (app) => {
           `(i.name ILIKE $${values.length} ESCAPE '\\' OR i.nick_name ILIKE $${values.length} ESCAPE '\\')`
         );
       }
-      if (request.query.verified === "true") {
-        conditions.push(`i.identity_verified = true`);
-      } else if (request.query.verified === "false") {
+      if (request.query.verified === "false") {
         conditions.push(`COALESCE(i.identity_verified, false) = false`);
+      } else if (request.query.verified !== "all") {
+        conditions.push(`i.identity_verified = true`);
       }
       if (request.query.platform) {
         values.push(request.query.platform.toLowerCase());

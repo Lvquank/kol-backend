@@ -59,10 +59,10 @@ export const mcnRoutes: FastifyPluginAsync = async (app) => {
         conditions.push(`(m.name ILIKE $${values.length} ESCAPE '\\'
           OR m.subtitle ILIKE $${values.length} ESCAPE '\\')`);
       }
-      if (request.query.verified === "true") {
-        conditions.push(`m.identity_verified = true`);
-      } else if (request.query.verified === "false") {
+      if (request.query.verified === "false") {
         conditions.push(`COALESCE(m.identity_verified, false) = false`);
+      } else if (request.query.verified !== "all") {
+        conditions.push(`m.identity_verified = true`);
       }
       if (request.query.platform) {
         values.push(request.query.platform.toLowerCase());
