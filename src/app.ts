@@ -1,6 +1,7 @@
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import helmet from "@fastify/helmet";
+import multipart from "@fastify/multipart";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import Fastify, { type FastifyError } from "fastify";
@@ -20,6 +21,8 @@ import { authRoutes } from "./routes/auth.js";
 import { adminApplicationRoutes } from "./routes/admin-applications.js";
 import { reportRoutes } from "./routes/reports.js";
 import { adminContentRoutes } from "./routes/admin-content.js";
+import { adminEntityRoutes } from "./routes/admin-entities.js";
+import { informationProposalRoutes } from "./routes/information-proposals.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -28,6 +31,7 @@ export async function buildApp() {
     },
     trustProxy: true,
     requestIdHeader: "x-request-id",
+    maxParamLength: 1000,
   });
 
   const corsOrigin =
@@ -43,10 +47,17 @@ export async function buildApp() {
   });
   await app.register(cors, {
     origin: corsOrigin,
-    methods: ["GET", "HEAD", "OPTIONS", "POST", "PATCH"],
+    methods: ["GET", "HEAD", "OPTIONS", "POST", "PATCH", "PUT", "DELETE"],
   });
   await app.register(jwt, {
     secret: config.auth.jwtSecret || "auth-not-configured",
+  });
+  await app.register(multipart, {
+    limits: {
+      files: 1,
+      fileSize: 20 * 1024 * 1024,
+      parts: 1
+    }
   });
   await app.register(swagger, {
     openapi: {
@@ -70,6 +81,7 @@ export async function buildApp() {
         { name: "Registrations" },
         { name: "Administration" },
         { name: "Reports" },
+        { name: "Information proposals" },
       ],
     },
   });
@@ -95,6 +107,8 @@ export async function buildApp() {
   await app.register(adminApplicationRoutes, { prefix: "/api/v1" });
   await app.register(reportRoutes, { prefix: "/api/v1" });
   await app.register(adminContentRoutes, { prefix: "/api/v1" });
+  await app.register(adminEntityRoutes, { prefix: "/api/v1" });
+  await app.register(informationProposalRoutes, { prefix: "/api/v1" });
   await app.register(registrationRoutes, { prefix: "/api/v1" });
 
   app.setNotFoundHandler((request, reply) => {

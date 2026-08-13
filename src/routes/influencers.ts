@@ -13,7 +13,7 @@ type InfluencerListQuery = {
   page?: string;
   limit?: string;
   search?: string;
-  verified?: "true" | "false";
+  verified?: "true" | "false" | "all";
   platform?: string;
   hasSourceId?: "true" | "false";
   sort?: "name" | "followers" | "channels" | "scrapedAt";
@@ -44,7 +44,7 @@ export const influencerRoutes: FastifyPluginAsync = async (app) => {
             page: { type: "integer", minimum: 1, default: 1 },
             limit: { type: "integer", minimum: 1, maximum: 100, default: 20 },
             search: { type: "string" },
-            verified: { type: "string", enum: ["true", "false"] },
+            verified: { type: "string", enum: ["true", "false", "all"] },
             platform: { type: "string" },
             hasSourceId: { type: "string", enum: ["true", "false"] },
             sort: { type: "string", enum: Object.keys(sortColumns), default: "name" },
@@ -64,9 +64,13 @@ export const influencerRoutes: FastifyPluginAsync = async (app) => {
           `(i.name ILIKE $${values.length} ESCAPE '\\' OR i.nick_name ILIKE $${values.length} ESCAPE '\\')`
         );
       }
-      if (request.query.verified) {
-        values.push(request.query.verified === "true");
-        conditions.push(`i.identity_verified = $${values.length}`);
+      if (request.query.verified === "all") {
+        // Admin view: include all records
+      } else if (request.query.verified === "true") {
+        conditions.push(`i.identity_verified = true`);
+      } else {
+        // Public default: only show active/unverified (Đang hiển thị)
+        conditions.push(`COALESCE(i.identity_verified, false) = false`);
       }
       if (request.query.platform) {
         values.push(request.query.platform.toLowerCase());

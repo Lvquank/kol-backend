@@ -40,9 +40,13 @@ PGSCHEMA=kol_gov
 HOST=0.0.0.0
 PORT=4000
 CORS_ORIGIN=*
+CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
+CLOUDINARY_FOLDER=kol-gov/registration-avatars
 ```
 
 Khi triển khai thật, nên đặt `CORS_ORIGIN` thành domain frontend cụ thể, ví dụ `https://example.com`. Có thể khai báo nhiều domain, phân cách bằng dấu phẩy.
+
+`CLOUDINARY_URL` lấy từ trang API Keys trong Cloudinary Console. Biến này chứa API secret nên chỉ cấu hình ở backend (ví dụ Environment của Render), không đặt trong frontend hoặc biến `NEXT_PUBLIC_*`. Chạy migration `006_registration_avatar_url.sql` trước khi nhận hồ sơ có ảnh.
 
 ## API chính
 
@@ -70,6 +74,8 @@ Khi triển khai thật, nên đặt `CORS_ORIGIN` thành domain frontend cụ t
 | GET | `/api/v1/news/:slug` | Nội dung đầy đủ của bài viết |
 | GET | `/api/v1/news/categories` | Danh mục tin và số bài |
 | GET | `/api/v1/news/tags` | Nhãn tin và số bài |
+| POST | `/api/v1/registration/avatar` | Tải ảnh đại diện lên Cloudinary và trả về URL HTTPS |
+| POST | `/api/v1/registration/applications` | Gửi hồ sơ đăng ký KOL/MCN, gồm URL ảnh đã tải lên |
 
 Tất cả endpoint danh sách trả về cùng cấu trúc:
 

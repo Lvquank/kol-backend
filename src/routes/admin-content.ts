@@ -44,8 +44,7 @@ export const adminContentRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.patch<{ Params: SlugParams; Body: NewsBody }>("/admin/news/:slug", { schema: { tags: ["Administration"], summary: "Update news post" } }, async (request, reply) => {
-    const admin = await requireAdmin(request);
-    if (admin.role !== "super_admin") return reply.code(403).send({ error: "FORBIDDEN", message: "Chỉ quản trị hệ thống được thay đổi tin tức." });
+    await requireAdmin(request);
     const body = { ...request.body, slug: request.params.slug };
     const error = validate(body);
     if (error) return reply.code(400).send({ error: "VALIDATION_ERROR", message: error });
