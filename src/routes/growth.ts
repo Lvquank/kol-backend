@@ -73,15 +73,19 @@ export const growthRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request) => {
       const pageInfo = pagination(request.query);
+      const entityType = request.query.entityType || "influencer";
       const values: unknown[] = [
-        request.query.entityType || "influencer",
+        entityType,
         Number.parseInt(request.query.periodDays || "7", 10),
         request.query.metric || "total"
       ];
       const conditions = [
         "gr.entity_type = $1",
         "gr.period_days = $2",
-        "gr.metric = $3"
+        "gr.metric = $3",
+        entityType === "owner"
+          ? "m.identity_verified = true"
+          : "i.identity_verified = true"
       ];
       const pattern = searchPattern(request.query.search);
       if (pattern) {
@@ -143,6 +147,7 @@ export const growthRoutes: FastifyPluginAsync = async (app) => {
               'sourceId', m.source_id,
               'name', m.name,
               'subtitle', m.subtitle,
+              'identityVerified', m.identity_verified,
               'totalChannels', m.total_channels,
               'totalKols', m.total_kols,
               'platforms', m.platforms,
