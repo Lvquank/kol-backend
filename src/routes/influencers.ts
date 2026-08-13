@@ -64,12 +64,9 @@ export const influencerRoutes: FastifyPluginAsync = async (app) => {
           `(i.name ILIKE $${values.length} ESCAPE '\\' OR i.nick_name ILIKE $${values.length} ESCAPE '\\')`
         );
       }
-      if (request.query.verified === "all") {
-        // Admin view: include all records
-      } else if (request.query.verified === "true") {
+      if (request.query.verified === "true") {
         conditions.push(`i.identity_verified = true`);
-      } else {
-        // Public default: only show active/unverified (Đang hiển thị)
+      } else if (request.query.verified === "false") {
         conditions.push(`COALESCE(i.identity_verified, false) = false`);
       }
       if (request.query.platform) {
