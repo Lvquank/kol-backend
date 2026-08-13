@@ -98,7 +98,7 @@ export const newsRoutes: FastifyPluginAsync = async (app) => {
     async (request) => {
       const pageInfo = pagination(request.query);
       const values: unknown[] = [];
-      const conditions: string[] = [];
+      const conditions: string[] = ["COALESCE((to_jsonb(n)->>'is_published')::boolean, true) = true"];
       const pattern = searchPattern(request.query.search);
       if (pattern) {
         values.push(pattern);
@@ -196,7 +196,7 @@ export const newsRoutes: FastifyPluginAsync = async (app) => {
             JOIN ${schema}.news_tags t ON t.tag_key = pt.tag_key
             WHERE pt.slug = n.slug), '[]'::jsonb) AS normalized_tags
         FROM ${schema}.news_posts n
-        WHERE n.slug = $1
+        WHERE n.slug = $1 AND COALESCE((to_jsonb(n)->>'is_published')::boolean, true) = true
       `, [request.params.slug]);
       return result.rows[0] || notFound(reply, "News post");
     }
