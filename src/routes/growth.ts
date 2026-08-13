@@ -156,8 +156,6 @@ export const growthRoutes: FastifyPluginAsync = async (app) => {
         LEFT JOIN ${schema}.influencers i ON i.influencer_key = ge.influencer_key
         LEFT JOIN ${schema}.mcn_owners m ON m.source_id = ge.mcn_source_id
         WHERE ${conditions.join(" AND ")}
-          AND (ge.influencer_key IS NULL OR COALESCE(i.identity_verified, false) = false)
-          AND (ge.mcn_source_id IS NULL OR COALESCE(m.identity_verified, false) = false)
         ORDER BY ${sort} ${order} NULLS LAST, gr.snapshot_key ASC
         LIMIT $${values.length - 1} OFFSET $${values.length}
       `, values);
